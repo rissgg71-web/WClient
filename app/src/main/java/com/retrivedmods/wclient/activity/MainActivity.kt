@@ -69,82 +69,14 @@ class MainActivity : ComponentActivity() {
         setContent {
             WClientTheme {
                 var showLoading by remember { mutableStateOf(true) }
-                var showVerificationDialog by remember { mutableStateOf(false) }
                 var verifying by remember { mutableStateOf(false) }
-                var wclientId by remember { mutableStateOf("") }
 
                 if (showLoading) {
                     LoadingScreen(
                         onDone = {
                             lifecycleScope.launch {
-                                wclientId = VerificationManager.getWClientId(this@MainActivity)
-
-                                if (VerificationManager.isWhitelisted(this@MainActivity, wclientId)) {
-                                    showLoading = false
-                                    return@launch
-                                }
-
-                                if (VerificationManager.isVerified(this@MainActivity, wclientId)) {
-                                    showLoading = false
-                                    return@launch
-                                }
-
+                                // VERIFIKASI DIHILANGKAN: Langsung lanjut ke aplikasi tanpa verifikasi
                                 showLoading = false
-                                showVerificationDialog = true
-                            }
-                        }
-                    )
-                } else if (showVerificationDialog) {
-                    VerificationDialog(
-                        wclientId = wclientId,
-                        onVerifyClick = {
-                            lifecycleScope.launch {
-                                verifying = true
-                                try {
-                                    val verifyUrl = VerificationManager.requestVerification(
-                                        this@MainActivity,
-                                        wclientId
-                                    )
-
-                                    VerificationManager.openInAppBrowser(
-                                        this@MainActivity,
-                                        verifyUrl
-                                    )
-
-                                    Toast.makeText(
-                                        this@MainActivity,
-                                        "Complete verification in the browser, then return to this app.",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-
-                                    VerificationManager.pollVerificationStatus(
-                                        this@MainActivity,
-                                        wclientId
-                                    ) { verified, reason ->
-                                        verifying = false
-                                        if (verified) {
-                                            showVerificationDialog = false
-                                            Toast.makeText(
-                                                this@MainActivity,
-                                                "Welcome - You are now verified!",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        } else {
-                                            Toast.makeText(
-                                                this@MainActivity,
-                                                "Verification failed: ${reason ?: "unknown"}",
-                                                Toast.LENGTH_LONG
-                                            ).show()
-                                        }
-                                    }
-                                } catch (t: Throwable) {
-                                    verifying = false
-                                    Toast.makeText(
-                                        this@MainActivity,
-                                        "Verification request failed: ${t.message}",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
                             }
                         }
                     )
