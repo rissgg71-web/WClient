@@ -52,136 +52,37 @@ object VerificationManager {
         return id
     }
 
+    // VERIFIKASI DIHILANGKAN: Selalu return true (tidak ada pengecekan whitelist)
     suspend fun isWhitelisted(ctx: Context, wclientId: String): Boolean =
         withContext(Dispatchers.IO) {
-            try {
-                val url = "$BASE_VERIFY_URL?action=check_whitelist&wclient_id=${URLEncoder.encode(wclientId, "utf-8")}"
-                val req = Request.Builder().url(url).get().build()
-
-                client.newCall(req).execute().use { resp ->
-                    if (!resp.isSuccessful) return@withContext false
-                    val body = resp.body?.string() ?: return@withContext false
-                    val j = JSONObject(body)
-                    return@withContext j.optBoolean("whitelisted", false)
-                }
-            } catch (t: Throwable) {
-                Log.e(TAG, "Error checking whitelist", t)
-                return@withContext false
-            }
+            return@withContext true
         }
 
+    // VERIFIKASI DIHILANGKAN: Selalu return true (tidak ada pengecekan verifikasi)
     suspend fun isVerified(ctx: Context, wclientId: String): Boolean =
         withContext(Dispatchers.IO) {
-            try {
-                val url = "$BASE_VERIFY_URL?action=check_verified&wclient_id=${URLEncoder.encode(wclientId, "utf-8")}"
-                val req = Request.Builder().url(url).get().build()
-
-                client.newCall(req).execute().use { resp ->
-                    if (!resp.isSuccessful) return@withContext false
-                    val body = resp.body?.string() ?: return@withContext false
-                    val j = JSONObject(body)
-                    return@withContext j.optBoolean("verified", false)
-                }
-            } catch (t: Throwable) {
-                Log.e(TAG, "Error checking verification", t)
-                return@withContext false
-            }
+            return@withContext true
         }
 
+    // VERIFIKASI DIHILANGKAN: Tidak diperlukan lagi
     suspend fun requestVerification(ctx: Context, wclientId: String): String =
         withContext(Dispatchers.IO) {
-            val payload = JSONObject().put("wclient_id", wclientId).toString()
-            val reqBody = payload.toRequestBody(jsonMedia)
-            val url = "$BASE_VERIFY_URL?action=request&short=1"
-            val req = Request.Builder().url(url).post(reqBody).build()
-
-            client.newCall(req).execute().use { resp ->
-                if (!resp.isSuccessful) throw Exception("Server ${resp.code}")
-                val body = resp.body?.string() ?: throw Exception("Empty response")
-                val j = JSONObject(body)
-                val verifyUrl = j.optString("verify_url", "")
-
-                if (verifyUrl.isBlank()) throw Exception("Invalid response")
-                return@withContext verifyUrl
-            }
+            return@withContext ""
         }
 
+    // VERIFIKASI DIHILANGKAN: Tidak diperlukan lagi
     fun openInAppBrowser(activity: Activity, verifyUrl: String) {
-        try {
-            if (verifyUrl.isBlank()) {
-                Log.w(TAG, "openInAppBrowser: empty URL")
-                return
-            }
-            if (!verifyUrl.startsWith("http://") && !verifyUrl.startsWith("https://")) {
-                Log.w(TAG, "openInAppBrowser: non-http URL, falling back to external: $verifyUrl")
-                openInExternalBrowser(activity, verifyUrl)
-                return
-            }
-            val builder = CustomTabsIntent.Builder()
-            builder.setShowTitle(true)
-            val customTabsIntent = builder.build()
-            customTabsIntent.launchUrl(activity, Uri.parse(verifyUrl))
-            Log.d(TAG, "Launched CustomTab for $verifyUrl")
-        } catch (e: ActivityNotFoundException) {
-            Log.w(TAG, "CustomTab Activity not found - fallback to external", e)
-            openInExternalBrowser(activity, verifyUrl)
-        } catch (t: Throwable) {
-            Log.w(TAG, "CustomTab failed - fallback to external", t)
-            openInExternalBrowser(activity, verifyUrl)
-        }
+        Log.d(TAG, "openInAppBrowser: Verification disabled - skipping browser")
     }
 
+    // VERIFIKASI DIHILANGKAN: Tidak diperlukan lagi
     fun openInExternalBrowser(activity: Activity, url: String) {
-        try {
-            val i = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            activity.startActivity(Intent.createChooser(i, "Open link"))
-            Log.d(TAG, "Launched external browser for $url")
-        } catch (e: ActivityNotFoundException) {
-            Log.e(TAG, "No browser to open url", e)
-        } catch (t: Throwable) {
-            Log.e(TAG, "Failed to open external browser", t)
-        }
+        Log.d(TAG, "openInExternalBrowser: Verification disabled - skipping browser")
     }
 
+    // VERIFIKASI DIHILANGKAN: Tidak diperlukan lagi
     fun pollVerificationStatus(ctx: Context, wclientId: String, onComplete: (Boolean, String?) -> Unit) {
-        scope.launch {
-            try {
-                val pollIntervalMs = 3000L
-                val start = System.currentTimeMillis()
-                val maxDurationMs = 4L * 60L * 60L * 1000L + 10_000L
-
-                while (true) {
-                    val url = "$BASE_VERIFY_URL?action=check_verified&wclient_id=${URLEncoder.encode(wclientId, "utf-8")}"
-                    val req = Request.Builder().url(url).get().build()
-
-                    client.newCall(req).execute().use { resp ->
-                        if (!resp.isSuccessful) {
-                            Log.d(TAG, "Status call returned ${resp.code}; will retry")
-                        } else {
-                            val s = resp.body?.string() ?: ""
-                            val j = JSONObject(s)
-                            val verified = j.optBoolean("verified", false)
-
-                            if (verified) {
-                                withContext(Dispatchers.Main) { onComplete(true, null) }
-                                return@launch
-                            }
-                        }
-                    }
-
-                    if (System.currentTimeMillis() - start > maxDurationMs) {
-                        withContext(Dispatchers.Main) { onComplete(false, "timed out") }
-                        return@launch
-                    }
-                    delay(pollIntervalMs)
-                }
-            } catch (t: Throwable) {
-                Log.e(TAG, "Polling error", t)
-                withContext(Dispatchers.Main) { onComplete(false, t.message ?: "error") }
-            }
-        }
+        Log.d(TAG, "pollVerificationStatus: Verification disabled - skipping poll")
     }
 
     fun cancelAll() {
